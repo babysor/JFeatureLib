@@ -211,6 +211,11 @@ public class Haralick extends AbstractFeatureDescriptor {
 
         double[][] p = cooccurrenceMatrix;
         double[][] Q = new double[NUM_GRAY_VALUES][NUM_GRAY_VALUES];
+        /* for debug purpose */
+//        double sumP = 0.0;
+//        for(double[]d:p)
+//            for(double i :d)
+//                sumP += i;
         for (int i = 0; i < NUM_GRAY_VALUES; i++) {
             double sum_j_p_x_minus_y = 0;
             for (int j = 0; j < NUM_GRAY_VALUES; j++) {
@@ -219,7 +224,7 @@ public class Haralick extends AbstractFeatureDescriptor {
                 sum_j_p_x_minus_y += j * p_x_minus_y[j];
 
                 features[0] += p_ij * p_ij;
-                features[2] += i * j * p_ij - mu_x * mu_y;
+                features[2] += (i- mu_x) * (j-mu_y) * p_ij;
                 features[3] += (i - meanGrayValue) * (i - meanGrayValue) * p_ij;
                 features[4] += p_ij / (1 + (i - j) * (i - j));
                 features[8] += p_ij * log(p_ij);
@@ -244,8 +249,7 @@ public class Haralick extends AbstractFeatureDescriptor {
         Arrays2.abs(realEigenvaluesOfQ);
         Arrays.sort(realEigenvaluesOfQ);
         features[13] = Math.sqrt(realEigenvaluesOfQ[realEigenvaluesOfQ.length - 2]);
-
-        features[2] /= Math.sqrt(var_x * var_y);
+        features[2] /= Math.sqrt(var_x* var_y);
         features[8] *= -1;
         features[10] *= -1;
         double maxhxhy = Math.max(hx, hy);
@@ -335,14 +339,14 @@ public class Haralick extends AbstractFeatureDescriptor {
         // two-pass is numerically stable.
         double ex = 0;
         for (int i = 0; i < NUM_GRAY_VALUES; i++) {
-            ex += a[i];
+            ex += a[i]*i;
         }
-        ex /= a.length;
+        //ex /= a.length;
         double var = 0;
         for (int i = 0; i < NUM_GRAY_VALUES; i++) {
-            var += (a[i] - ex) * (a[i] - ex);
+            var += (i - ex) * ( i - ex)*a[i];
         }
-        var /= (a.length - 1);
+        //var /= (a.length - 1);
 
         return new double[]{ex, var};
     }
@@ -420,7 +424,7 @@ public class Haralick extends AbstractFeatureDescriptor {
         /**
          * gray histogram of the image.
          */
-        double[] grayHistogram;
+        //double[] grayHistogram;  //Unused
         /**
          * Quantized gray values of each pixel of the image.
          *
@@ -453,7 +457,7 @@ public class Haralick extends AbstractFeatureDescriptor {
 
         void calculate() {
             this.GRAY_SCALE = (double) GRAY_RANGES / (double) NUM_GRAY_VALUES;
-            this.grayHistogram = new double[GRAY_RANGES];
+            //this.grayHistogram = new double[GRAY_RANGES];   //Unused
 
             calculateGreyValues();
 
@@ -495,6 +499,7 @@ public class Haralick extends AbstractFeatureDescriptor {
                     }
                 }
             }
+            System.out.print("GrayMatrix done\n");
         }
 
         private void calculateGreyValues() {
@@ -506,10 +511,11 @@ public class Haralick extends AbstractFeatureDescriptor {
                 graySum += gray;
                 grayValue[pos] = quantized;  // quantized for texture analysis
                 assert grayValue[pos] >= 0 : grayValue[pos] + " > 0 violated";
-                grayHistogram[gray]++;
+                //grayHistogram[gray]++;  //Unused
             }
-            Arrays2.div(grayHistogram, size);
-            meanGrayValue = graySum / size;
+            //Arrays2.div(grayHistogram, size);  //Unused
+            //meanGrayValue = graySum / size/ GRAY_SCALE; !!
+            meanGrayValue = graySum / size/ GRAY_SCALE;
         }
 
         /**
@@ -521,7 +527,7 @@ public class Haralick extends AbstractFeatureDescriptor {
          */
         private void increment(int g1, int g2) {
             cooccurrenceMatrices[g1][g2]++;
-            cooccurrenceMatrices[g2][g1]++;
+            cooccurrenceMatrices[g2][g1]++;//can be optimized: by calculate this after all iterations
         }
 
         public double getMeanGrayValue() {
@@ -539,5 +545,6 @@ public class Haralick extends AbstractFeatureDescriptor {
         }
     }
 //</editor-fold>
+
 
 }
